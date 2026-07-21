@@ -1,0 +1,51 @@
+package-as: ActionbarPlus-ArcLayout
+
+# --------------------------
+license-output: LICENSE.txt
+enable-nolib-creation: no
+
+manual-changelog:
+  filename: CHANGELOG.txt
+
+embedded-libraries:
+  - LibStub
+  - Ace3
+  - LibPrettyPrint
+
+tools-used:
+  - DevSuite
+  - DebugChatFrame
+  - Bugsack
+  - Bug-Grabber
+
+required-dependencies:
+  - ActionbarPlus
+
+optional-dependencies:
+  - Masque
+  - ActionbarPlus-Masque
+
+ignore:
+  - "*.sh"
+  - "*.md"
+  - "*.yaml"
+  - "*.yml"
+  - "*.toml"
+  - dev
+  - doc
+
+# REQUIRED for CurseForge packager (non-obvious):
+# The LEFT side MUST be <repo-folder>/<addon-folder>
+#   - <addon-folder> MUST be the folder that contains the .toc files
+# The RIGHT side MUST be the addon name:
+#   - Must match the .toc filename (AddonName.toc)
+#   - Must match `package-as`
+#
+# NOTE:
+# CurseForge release.sh (poorly) relies on `move-folders` for *addon discovery*,
+# not just post-processing. If this does not exactly match
+# <repo>/<addon>, `toc_root_paths` will be empty and packaging WILL fail.
+#
+# ⚠️ Do not change unless you also change the repo/addon layout.
+move-folders:
+  ActionbarPlus-ArcLayout/ActionbarPlus-ArcLayout: ActionbarPlus-ArcLayout
