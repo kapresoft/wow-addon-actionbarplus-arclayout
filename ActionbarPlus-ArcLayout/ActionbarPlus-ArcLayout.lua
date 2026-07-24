@@ -15,7 +15,7 @@ local cns = core:ns()
 --[[-----------------------------------------------------------------------------
 Module::ArcLayout
 Buttons are arranged along a 90-degree arc, from -45 to 45 degrees, opening
-either up or down per ui.layoutConfig.arc.arcDirection. Backdrop is not supported since
+either up or down per this bar's arc config (arcDirection). Backdrop is not supported since
 there's no rectangular frame edge to anchor to. Extra buttons form a second concentric
 arc (see ApplyExtraButtons) instead of a rectangular row.
 
@@ -35,7 +35,7 @@ local p, t = cns:log(libName)
 local DEFAULT_ARC_SPAN_DEGREES = 90
 local MIN_ARC_SPAN_DEGREES, MAX_ARC_SPAN_DEGREES = 10, 180
 local MAX_EXTRA_BUTTON_RINGS = 2
--- Bounds for extraButtonSpacing (ui.layoutConfig.arc): clearance between adjacent extra
+-- Bounds for extraButtonSpacing (this bar's arc config): clearance between adjacent extra
 -- buttons within a ring. Chord-distance `size` alone (no spacing) has square-cornered
 -- buttons touching/appearing to overlap; round icons hide this since their visible art
 -- sits inset from the button's true edge -- different skins need different values.
@@ -83,26 +83,31 @@ local function MasqueReSkin(btn)
   grp:ReSkin(btn)
 end
 
--- One-time default skin for the 'Buttons (Arc)' group, applied exactly once, ever
--- (global.layout.arc.initialMasqueSkinApplied) -- never re-applied afterward, even if
--- the user changes the skin themselves later.
+-- One-time default skin for the 'Buttons (Arc)' group, applied exactly once per
+-- profile (arc.initialMasqueSkinApplied, tracked on bar 1 as the profile-wide flag
+-- since this isn't really per-bar data) -- never re-applied afterward, even if the
+-- user changes the skin themselves later.
 local function ApplyInitialMasqueSkin()
   local grp = GetMasqueGroup()
   if not grp then return end
 
   local ARC_DEFAULT_SKIN = 'Serenity - Redux'
-  local g = cns:g()
-  g.layout = g.layout or {}
-  g.layout.arc = g.layout.arc or {}
-  if not g.layout.arc.initialMasqueSkinApplied then
+  -- Reads bar 1's config directly (not via the GetLayoutConfig(frame) helper below):
+  -- this runs at load time / on OnDatabaseReady, before any bar frame exists yet.
+  local arcConf = cns:bar(1).ui.layoutConfig.arc
+  if not arcConf.initialMasqueSkinApplied then
     if type(grp.__Set) == 'function' then
       grp:__Set('SkinID', ARC_DEFAULT_SKIN)
     end
-    g.layout.arc.initialMasqueSkinApplied = true
+    arcConf.initialMasqueSkinApplied = true
   end
 end
 
--- cns:g() is only safe once Core's AceDB is registered (OnInitialize -> InitDb ->
+--- @param frame BarFrame_ABP_2_0
+--- @return ArcLayoutConfig_ABP_2_0
+local function GetLayoutConfig(frame) return frame.widget:layoutConf().arc end
+
+-- cns:bar(1) is only safe once Core's AceDB is registered (OnInitialize -> InitDb ->
 -- RegisterDB). Run immediately if that already happened before this file loaded;
 -- otherwise wait for Core's real readiness signal instead of guessing.
 if cns:IsDatabaseReady() then
@@ -146,7 +151,7 @@ function o:ApplyExtraButtons(frame)
     -- matches ns.buttonTemplate set in ActionbarPlus-BarsUI/Modules/Button_2_0_3.lua;
     -- referenced by name directly (rather than through BarsUI's namespace object) since
     -- this can run before Core has finished registering BarsUI into its own O table
-    return CreateFrame('CheckButton', name, parent, 'ABP_ButtonTemplate_2_0_3', encodedID)
+    return CreateFrame('CheckButton', name, parent, cns:GetButtonTemplateName(), encodedID)
   end
 
   local anchor = eb.anchor or 'TOPRIGHT'
@@ -175,7 +180,7 @@ function o:ApplyExtraButtons(frame)
   -- eb.gap applies at every ring boundary: main arc -> ring 0, and ring 0 -> ring 1+.
   -- The main-arc radius is measured to main button centers, so clearing the main
   -- buttons' own edge needs half their size too, not just half the extra button's size.
-  local extraSpacing = uic.layoutConfig.arc.extraButtonSpacing or DEFAULT_EXTRA_BUTTON_SPACING
+  local extraSpacing = GetLayoutConfig(frame).extraButtonSpacing or DEFAULT_EXTRA_BUTTON_SPACING
   local mainButtonSize = uic.button.size or 0
   local firstRingStep = (mainButtonSize / 2) + (size / 2) + (eb.gap or 0)
   local ringStep = size + (eb.gap or 0)
@@ -265,9 +270,12 @@ function o:ApplyExtraButtons(frame)
   end
 end
 
---- @param ui BarUIConfig_ABP_2_0
+--- @param frame BarFrame_ABP_2_0
 --- @return number
-function o:GetButtonCount(ui) return math.min(ui.layoutConfig.arc.buttonCount or 9, self:GetMaxButtonCount()) end
+function o:GetButtonCount(frame)
+  local arcConf = GetLayoutConfig(frame)
+  return math.min(arcConf.buttonCount or 9, self:GetMaxButtonCount())
+end
 
 --- @return number
 function o:GetMaxButtonCount() return 13 end
@@ -289,13 +297,13 @@ function o:GetMasqueGroupKey() return MASQUE_ADDON_NAME .. '_' .. MASQUE_GROUP_S
 
 --- Adds Arc's own controls (Button Count, Arc Direction, Arc Span) to the Layout tab,
 --- beyond the shared spacing sliders BarOptionsDialog.lua already builds generically.
+--- @param frame BarFrame_ABP_2_0
 --- @param tab AceGUITabGroup
---- @param ui BarUIConfig_ABP_2_0
 --- @param onChanged fun()
-function o:ApplyOptionsUI(tab, ui, onChanged)
+function o:ApplyOptionsUI(frame, tab, onChanged)
   local AceGUI = cns:AceGUI()
   local L = cns:GetLocale()
-  local arcConf = ui.layoutConfig.arc
+  local arcConf = GetLayoutConfig(frame)
 
   local maxButtonCount = self:GetMaxButtonCount()
   if (arcConf.buttonCount or 9) > maxButtonCount then
@@ -376,8 +384,7 @@ function o:ApplyDragHandle(frame, dragAnchor, thickness)
   handle:SetWidth(thickness)
 
   if dragAnchor == 'TOPRIGHT' then
-    local ui = w:conf().ui
-    local lastBtn1 = w.buttons[self:GetButtonCount(ui)]
+    local lastBtn1 = w.buttons[self:GetButtonCount(frame)]
     handle:SetPoint('LEFT', lastBtn1, 'RIGHT', 3, 0)
     handle:SetPoint('CENTER', lastBtn1, 'CENTER', thickness, 0)
   else
@@ -387,12 +394,12 @@ function o:ApplyDragHandle(frame, dragAnchor, thickness)
 end
 
 --- @param frame BarFrame_ABP_2_0
---- @param ui BarUIConfig_ABP_2_0
-function o:Apply(frame, ui)
-  local count = self:GetButtonCount(ui)
+function o:ApplyButtons(frame)
+  local ui = frame.widget:conf().ui
+  local count = self:GetButtonCount(frame)
   local size = ui.button.size
   local spacing = (ui.button.spacing and ui.button.spacing.horizontal) or 0
-  local arcConf = ui.layoutConfig.arc
+  local arcConf = GetLayoutConfig(frame)
   local isDown = arcConf.arcDirection == 'down'
   local arcSpanDegrees = arcConf.arcSpan or DEFAULT_ARC_SPAN_DEGREES
   local arcStartDegrees = -arcSpanDegrees / 2
