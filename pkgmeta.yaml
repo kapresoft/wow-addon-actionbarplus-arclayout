@@ -4,9 +4,6 @@ package-as: ActionbarPlus-ArcLayout
 license-output: LICENSE.txt
 enable-nolib-creation: no
 
-manual-changelog:
-  filename: CHANGELOG.txt
-
 embedded-libraries:
   - LibStub
   - Ace3
