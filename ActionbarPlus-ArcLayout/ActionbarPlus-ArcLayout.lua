@@ -83,37 +83,28 @@ local function MasqueReSkin(btn)
   grp:ReSkin(btn)
 end
 
--- One-time default skin for the 'Buttons (Arc)' group, applied exactly once per
--- profile (arc.initialMasqueSkinApplied, tracked on bar 1 as the profile-wide flag
--- since this isn't really per-bar data) -- never re-applied afterward, even if the
--- user changes the skin themselves later.
-local function ApplyInitialMasqueSkin()
+--- @param frame BarFrame_ABP_2_0
+--- @return ArcLayoutConfig_ABP_2_0
+local function GetLayoutConfig(frame) return frame.widget:layoutConf().arc end
+
+-- One-time default skin for the 'Buttons (Arc)' group, applied exactly once per bar
+-- (arc.initialMasqueSkinApplied) the first time Arc is selected on that bar's Layout
+-- tab -- never re-applied afterward, even if the user changes the skin themselves later.
+-- Triggered from the Layout Type dropdown (see o:OnSelected) rather than at load time,
+-- since Masque's own readiness can't be guaranteed relative to Core's at load time.
+--- @param frame BarFrame_ABP_2_0
+local function ApplyInitialMasqueSkin(frame)
   local grp = GetMasqueGroup()
   if not grp then return end
 
   local ARC_DEFAULT_SKIN = 'Serenity - Redux'
-  -- Reads bar 1's config directly (not via the GetLayoutConfig(frame) helper below):
-  -- this runs at load time / on OnDatabaseReady, before any bar frame exists yet.
-  local arcConf = cns:bar(1).ui.layoutConfig.arc
+  local arcConf = GetLayoutConfig(frame)
   if not arcConf.initialMasqueSkinApplied then
     if type(grp.__Set) == 'function' then
       grp:__Set('SkinID', ARC_DEFAULT_SKIN)
     end
     arcConf.initialMasqueSkinApplied = true
   end
-end
-
---- @param frame BarFrame_ABP_2_0
---- @return ArcLayoutConfig_ABP_2_0
-local function GetLayoutConfig(frame) return frame.widget:layoutConf().arc end
-
--- cns:bar(1) is only safe once Core's AceDB is registered (OnInitialize -> InitDb ->
--- RegisterDB). Run immediately if that already happened before this file loaded;
--- otherwise wait for Core's real readiness signal instead of guessing.
-if cns:IsDatabaseReady() then
-  ApplyInitialMasqueSkin()
-else
-  core:RegisterMessage(cns:msg('OnDatabaseReady'), ApplyInitialMasqueSkin)
 end
 
 --[[-----------------------------------------------------------------------------
@@ -294,6 +285,10 @@ function o:GetMaxExtraButtonSpacing() return MAX_EXTRA_BUTTON_SPACING end
 
 --- @return string
 function o:GetMasqueGroupKey() return MASQUE_ADDON_NAME .. '_' .. MASQUE_GROUP_STATIC_ID end
+
+--- Called once whenever Arc is chosen for this bar from the Layout Type dropdown.
+--- @param frame BarFrame_ABP_2_0
+function o:OnSelected(frame) ApplyInitialMasqueSkin(frame) end
 
 --- Adds Arc's own controls (Button Count, Arc Direction, Arc Span) to the Layout tab,
 --- beyond the shared spacing sliders BarOptionsDialog.lua already builds generically.
