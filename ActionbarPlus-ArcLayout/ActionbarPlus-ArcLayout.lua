@@ -66,6 +66,13 @@ local function GetMasqueGroup()
   local Masque = LibStub('Masque', true)
   if not Masque then return nil end
   masqueGroup = Masque:Group(MASQUE_ADDON_NAME, MASQUE_GROUP_LABEL, MASQUE_GROUP_STATIC_ID)
+  -- Masque's own Skins UI can enable/disable this group independent of anything
+  -- ActionbarPlus does. That resets/re-applies Masque's own textures, but leaves
+  -- ActionbarPlus's own per-button visuals stale until the affected bars re-render --
+  -- tell BarsUI to do so rather than requiring a /reload.
+  masqueGroup:RegisterCallback(function(_, _, value)
+    core:SendMessage(cns:msg('OnMasqueGroupToggled'), value)
+  end, 'Disabled')
   return masqueGroup
 end
 
