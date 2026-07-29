@@ -20,6 +20,7 @@ required-dependencies:
 
 optional-dependencies:
   - Masque
+  - Masque_Serenity
   - ActionbarPlus-Masque
 
 ignore:
