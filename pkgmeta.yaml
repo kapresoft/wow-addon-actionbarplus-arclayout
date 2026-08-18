@@ -1,13 +1,9 @@
 package-as: ActionbarPlus-ArcLayout
-
 # --------------------------
-license-output: LICENSE.txt
-enable-nolib-creation: no
 
-embedded-libraries:
-  - LibStub
-  - Ace3
-  - LibPrettyPrint
+manual-changelog:
+  filename: dev/changelog-release.md
+  markup-type: markdown
 
 tools-used:
   - DevSuite
@@ -17,8 +13,6 @@ tools-used:
 
 required-dependencies:
   - ActionbarPlus
-
-optional-dependencies:
   - Masque
   - Masque_Serenity
   - ActionbarPlus-Masque
