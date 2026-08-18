@@ -14,7 +14,7 @@ tools-used:
 required-dependencies:
   - ActionbarPlus
   - Masque
-  - Masque_Serenity
+  - Masque-Serenity
   - ActionbarPlus-Masque
 
 ignore:
