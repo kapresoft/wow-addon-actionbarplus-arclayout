@@ -1,6 +1,6 @@
 [![Release Build](https://github.com/kapresoft/wow-addon-actionbarplus-arclayout/actions/workflows/release-build.yml/badge.svg)](https://github.com/kapresoft/wow-addon-actionbarplus-arclayout/actions/workflows/release-build.yml)
 
-# ActionbarPlus-ArcLayout :: Arc-Shaped Action Bars for ActionbarPlus
+# ActionbarPlus-ArcLayout :: Curve your ActionbarPlus bars into a sleek, adjustable arc
 > A [World of Warcraft](https://worldofwarcraft.com/) AddOn
 
 ![download-count](https://cf.way2muchnoise.eu/full_1619737_downloads.svg?badge_style=for_the_badge) ![supported-wow-versions](https://cf.way2muchnoise.eu/versions/World%20of%20Warcraft%20Versions_1619737_all.svg?badge_style=for_the_badge)
@@ -8,7 +8,7 @@
 [//]: # (https://cf.way2muchnoise.eu/)
 [//]: # (See more on badges at: https://support.curseforge.com/en/support/solutions/articles/9000206928-curseforge-badges)
 
-[Releases](../../releases) | [Known Issues](../../issues) | [Curse Forge](https://www.curseforge.com/wow/addons/actionbarplus-arclayout/files) | [Quick Start Guide (Video)](https://youtu.be/XcYbjPv3d_o)
+[Releases](https://github.com/kapresoft/wow-addon-actionbarplus-arclayout/releases) | [Known Issues](https://github.com/kapresoft/wow-addon-actionbarplus-arclayout/issues) | [Curse Forge](https://www.curseforge.com/wow/addons/actionbarplus-arclayout/files) | [Quick Start Guide (Video)](https://youtu.be/XcYbjPv3d_o)
 
 >Available for Retail and Classic versions of World of Warcraft
 
@@ -48,8 +48,8 @@ Watch the [Quick Start Guide](https://youtu.be/XcYbjPv3d_o) for a walkthrough.
 
 ### Author Notes
 
-- Please submit bugs and feature requests at [Github/ActionbarPlus-ArcLayout/issues](../../issues)
-- [Releases](../../releases)
+- Please submit bugs and feature requests at [Github/ActionbarPlus-ArcLayout/issues](https://github.com/kapresoft/wow-addon-actionbarplus-arclayout/issues)
+- [Releases](https://github.com/kapresoft/wow-addon-actionbarplus-arclayout/releases)
 
 ## AddOn Distribution
 
@@ -65,7 +65,7 @@ If ActionbarPlus has made your gameplay easier, consider supporting its developm
 
 ## License
 
-All rights reserved. See [LICENSE](LICENSE).
+All rights reserved. See [LICENSE](https://github.com/kapresoft/wow-addon-actionbarplus-arclayout/blob/main/LICENSE).
 
 ## About
 

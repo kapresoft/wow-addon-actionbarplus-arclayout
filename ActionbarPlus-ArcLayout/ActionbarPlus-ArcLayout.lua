@@ -52,7 +52,8 @@ Masque
 -------------------------------------------------------------------------------]]
 -- Backwards-compatible: falls back to the literal if an older ActionbarPlus-Core
 -- (predating MasqueAddonName()) is installed alongside this addon.
-local MASQUE_ADDON_NAME = (type(cns.MasqueAddonName) == 'function' and cns:MasqueAddonName()) or 'ActionbarPlus'
+local MASQUE_ADDON_NAME = (type(cns.MasqueAddonName) == 'function' and cns:MasqueAddonName())
+  or 'ActionbarPlus'
 local MASQUE_GROUP_LABEL = 'Buttons (Arc)' -- display name shown in Masque's Skins UI
 local MASQUE_GROUP_STATIC_ID = 'Buttons_Arc' -- identifier-safe; used for the options-panel key
 
@@ -70,9 +71,10 @@ local function GetMasqueGroup()
   -- ActionbarPlus does. That resets/re-applies Masque's own textures, but leaves
   -- ActionbarPlus's own per-button visuals stale until the affected bars re-render --
   -- tell BarsUI to do so rather than requiring a /reload.
-  masqueGroup:RegisterCallback(function(_, _, value)
-    core:SendMessage(cns:msg('OnMasqueGroupToggled'), value)
-  end, 'Disabled')
+  masqueGroup:RegisterCallback(
+    function(_, _, value) core:SendMessage(cns:msg('OnMasqueGroupToggled'), value) end,
+    'Disabled'
+  )
   return masqueGroup
 end
 
@@ -107,9 +109,7 @@ local function ApplyInitialMasqueSkin(frame)
   local ARC_DEFAULT_SKIN = 'Serenity - Redux'
   local arcConf = GetLayoutConfig(frame)
   if not arcConf.initialMasqueSkinApplied then
-    if type(grp.__Set) == 'function' then
-      grp:__Set('SkinID', ARC_DEFAULT_SKIN)
-    end
+    if type(grp.__Set) == 'function' then grp:__Set('SkinID', ARC_DEFAULT_SKIN) end
     arcConf.initialMasqueSkinApplied = true
   end
 end
@@ -136,7 +136,9 @@ function o:ApplyExtraButtons(frame)
   local eb = uic.extraButton
   if not eb or not eb.enabled then
     if w.extraButtons then
-      for _, btn in ipairs(w.extraButtons) do btn:Hide() end
+      for _, btn in ipairs(w.extraButtons) do
+        btn:Hide()
+      end
     end
     return
   end
@@ -182,7 +184,8 @@ function o:ApplyExtraButtons(frame)
   local mainButtonSize = uic.button.size or 0
   local firstRingStep = (mainButtonSize / 2) + (size / 2) + (eb.gap or 0)
   local ringStep = size + (eb.gap or 0)
-  local baseRadius = isOuter and (geo.radius + firstRingStep) or math.max(0, geo.radius - firstRingStep)
+  local baseRadius = isOuter and (geo.radius + firstRingStep)
+    or math.max(0, geo.radius - firstRingStep)
 
   local function ringRadius(ring)
     -- ring 0 = baseRadius (main arc + gap); each ring beyond that adds one more
@@ -249,7 +252,8 @@ function o:ApplyExtraButtons(frame)
       local angle = extraAngle(col, ringCount, stepDegrees)
       local rad = math.rad(angle)
       local x = geo.centerX + radius * math.sin(rad)
-      local y = geo.isDown and (geo.centerY - radius * math.cos(rad)) or (geo.centerY + radius * math.cos(rad))
+      local y = geo.isDown and (geo.centerY - radius * math.cos(rad))
+        or (geo.centerY + radius * math.cos(rad))
 
       btn:SetPoint('CENTER', frame, 'BOTTOMLEFT', x, y)
       btn:Show()
@@ -360,7 +364,11 @@ function o:ApplyOptionsUI(frame, tab, onChanged)
   local slExtraButtonSpacing = AceGUI:Create('Slider')
   slExtraButtonSpacing:SetLabel(L['Extra Button Spacing'])
   slExtraButtonSpacing:SetRelativeWidth(0.5)
-  slExtraButtonSpacing:SetSliderValues(self:GetMinExtraButtonSpacing(), self:GetMaxExtraButtonSpacing(), 1)
+  slExtraButtonSpacing:SetSliderValues(
+    self:GetMinExtraButtonSpacing(),
+    self:GetMaxExtraButtonSpacing(),
+    1
+  )
   slExtraButtonSpacing:SetValue(arcConf.extraButtonSpacing or DEFAULT_EXTRA_BUTTON_SPACING)
   slExtraButtonSpacing:SetCallback('OnValueChanged', function(_, _, val)
     arcConf.extraButtonSpacing = val
@@ -380,7 +388,7 @@ function o:ApplyDragHandle(frame, dragAnchor, thickness)
 
   local handle = w:GetOrCreateDragHandle()
   handle:ClearAllPoints()
-  local btnSize   = btn1:GetHeight()
+  local btnSize = btn1:GetHeight()
   local heightPad = 6
   handle:SetHeight(btnSize - heightPad)
   handle:SetWidth(thickness)
@@ -411,15 +419,17 @@ function o:ApplyButtons(frame)
   local stepDegrees = count > 1 and (arcSpanDegrees / (count - 1)) or 0
   local minChord = size + spacing
   local minRadius = size
-  local radius = stepDegrees > 0 and math.max(minRadius, (minChord / 2) / math.sin(math.rad(stepDegrees / 2))) or minRadius
+  local radius = stepDegrees > 0
+      and math.max(minRadius, (minChord / 2) / math.sin(math.rad(stepDegrees / 2)))
+    or minRadius
 
-  local totalWidth  = 2 * radius * math.sin(math.rad(arcSpanDegrees / 2)) + size
+  local totalWidth = 2 * radius * math.sin(math.rad(arcSpanDegrees / 2)) + size
   local totalHeight = radius * (1 - math.cos(math.rad(arcSpanDegrees / 2))) + size
   frame:SetSize(totalWidth, totalHeight)
 
   local hotKeyFontSize = math.max(8, math.floor(size * 12 / 40))
-  local hotKeyOffsetX  = math.floor(size * 5 / 40)
-  local hotKeyOffsetY  = math.floor(size * 7 / 40)
+  local hotKeyOffsetX = math.floor(size * 5 / 40)
+  local hotKeyOffsetY = math.floor(size * 7 / 40)
 
   -- Circle center sits *outside* the frame (below it for an up-arc, above it for a
   -- down-arc) so the button positions -- at distance `radius` from the center -- land
@@ -430,8 +440,12 @@ function o:ApplyButtons(frame)
   -- stashed for ApplyExtraButtons, which runs after Apply() but needs this same geometry
   -- to lay out a second concentric arc
   frame.widget.arcGeometry = {
-    centerX = centerX, centerY = centerY, radius = radius,
-    arcStartDegrees = arcStartDegrees, arcSpanDegrees = arcSpanDegrees, isDown = isDown,
+    centerX = centerX,
+    centerY = centerY,
+    radius = radius,
+    arcStartDegrees = arcStartDegrees,
+    arcSpanDegrees = arcSpanDegrees,
+    isDown = isDown,
     stepDegrees = stepDegrees,
   }
 
@@ -461,4 +475,3 @@ function o:ApplyButtons(frame)
     end
   end
 end
-
