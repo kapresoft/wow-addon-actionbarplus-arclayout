@@ -4,11 +4,6 @@ about: New Story Template
 title: 'Story: [Title]'
 labels: ''
 assignees: ''
-
-Don't forget to apply labels:
-  - priority: high / medium / low
-  - Complexity: 1-5
-  - Size: S / M / L / XL
 ---
 
 # Story
@@ -17,6 +12,10 @@ Don't forget to apply labels:
 
 ## Details
 [describe additional items here]
+
+## Acceptance Criteria
+- [ ] [Observable behavior in-game that confirms this works]
+- [ ] [Edge case or condition that must hold]
 
 ## Screenshots
 [screenshots if available]
