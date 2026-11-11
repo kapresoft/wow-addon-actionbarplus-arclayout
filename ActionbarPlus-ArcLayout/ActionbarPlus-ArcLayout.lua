@@ -133,8 +133,10 @@ local function GetExtraGroup()
   return extraGroup
 end
 
+local events = cns:NewAceEvent()
+
 -- The extra group takes the Arc skin when sync turns on
-cns:NewAceEvent():RegisterMessage(cns:msg('OnSyncExtraButtonsSkinChanged'), function(_, enabled)
+events:RegisterMessage(cns:msg('OnSyncExtraButtonsSkinChanged'), function(_, enabled)
   if enabled then CopySkin(GetMasqueGroup(), GetExtraGroup()) end
 end)
 
@@ -155,19 +157,59 @@ local function MasqueReSkin(btn) GroupOf(btn):ReSkin(btn) end
 --- @return ArcLayoutConfig_ABP_2_0
 local function GetLayoutConfig(frame) return frame.widget:layoutConf().arc end
 
--- One-time default skin for both Arc groups, applied exactly once per bar
--- (arc.initialMasqueSkinApplied) the first time Arc is selected on that bar's Layout
--- tab -- never re-applied afterward, even if the user changes the skin themselves later.
--- Triggered from the Layout Type dropdown (see o:OnSelected) rather than at load time,
--- since Masque's own readiness can't be guaranteed relative to Core's at load time.
+-- An older ActionbarPlus has no global settings: the flag stays per bar
+--- @param frame BarFrame_ABP_2_0
+--- @return boolean
+local function IsDefaultSkinApplied(frame)
+  if cns.masque then return cns:masque().arcDefaultSkinApplied end
+  return GetLayoutConfig(frame).initialMasqueSkinApplied
+end
+
+--- @param frame BarFrame_ABP_2_0
+local function MarkDefaultSkinApplied(frame)
+  if cns.masque then
+    cns:masque().arcDefaultSkinApplied = true
+    return
+  end
+  GetLayoutConfig(frame).initialMasqueSkinApplied = true
+end
+
+-- Once for all Arc bars: Masque shares the skin across them. Runs when Arc
+-- is picked, not at load time, when Masque may not be ready yet.
 --- @param frame BarFrame_ABP_2_0
 local function ApplyInitialMasqueSkin(frame)
   local ARC_DEFAULT_SKIN = 'Serenity - Redux'
-  local arcConf = GetLayoutConfig(frame)
-  if arcConf.initialMasqueSkinApplied then return end
+  if IsDefaultSkinApplied(frame) then return end
   GetMasqueGroup():__Set('SkinID', ARC_DEFAULT_SKIN)
   GetExtraGroup():__Set('SkinID', ARC_DEFAULT_SKIN)
-  arcConf.initialMasqueSkinApplied = true
+  MarkDefaultSkinApplied(frame)
+end
+
+-- A bar with the old per-bar flag means the default was applied before
+local function AdoptPerBarFlag()
+  if not cns.masque then return end
+  local mc = cns:masque()
+  if mc.arcDefaultSkinApplied then return end
+  for _, bar in pairs(cns:p().bars) do
+    if bar.ui.layoutConfig.arc.initialMasqueSkinApplied then
+      mc.arcDefaultSkinApplied = true
+      return
+    end
+  end
+end
+
+-- Bars are per profile, so each profile is checked as it becomes active
+local function WatchProfiles()
+  AdoptPerBarFlag()
+  local db = cns:db()
+  db.RegisterCallback(events, 'OnProfileChanged', AdoptPerBarFlag)
+  db.RegisterCallback(events, 'OnProfileCopied', AdoptPerBarFlag)
+end
+
+if cns:IsDatabaseReady() then
+  WatchProfiles()
+else
+  events:RegisterMessage(cns:msg('OnDatabaseReady'), WatchProfiles)
 end
 
 --[[-----------------------------------------------------------------------------
