@@ -44,8 +44,8 @@ local MIN_EXTRA_BUTTON_SPACING, MAX_EXTRA_BUTTON_SPACING = 0, 20
 
 --[[-----------------------------------------------------------------------------
 Masque
-  Arc owns a dedicated Masque group, separate from ActionbarPlus-Masque's shared
-  'Buttons' group, so Arc's buttons (main + extra) can carry their own skin
+  Arc owns dedicated Masque groups (main and extra buttons), separate from
+  ActionbarPlus-Masque's groups, so Arc's buttons carry their own skin
   independent of the rest of ActionbarPlus. Resolved lazily (not at this file's own
   load time) since neither Masque nor Core's AceDB is guaranteed ready yet here --
   OptionalDeps only orders files, not runtime addon-enabled/OnInitialize state.
@@ -54,64 +54,120 @@ Masque
 -- (predating MasqueAddonName()) is installed alongside this addon.
 local MASQUE_ADDON_NAME = (type(cns.MasqueAddonName) == 'function' and cns:MasqueAddonName())
   or 'ActionbarPlus'
-local MASQUE_GROUP_LABEL = 'Buttons (Arc)' -- display name shown in Masque's Skins UI
-local MASQUE_GROUP_STATIC_ID = 'Buttons_Arc' -- identifier-safe; used for the options-panel key
+-- Label is shown in Masque's Skins UI; the static ID keys the options panel
+local MASQUE_GROUP_LABEL, MASQUE_GROUP_STATIC_ID = 'Buttons - Arc', 'Buttons_Arc'
+local MASQUE_EXTRA_LABEL, MASQUE_EXTRA_STATIC_ID = 'Buttons - Arc (Extra)', 'Buttons_Arc_Extra'
 
---- @type Masque_Group|nil
+--- @type Masque_Group?
 local masqueGroup
+--- @type Masque_Group?
+local extraGroup
 
---- Resolves (and lazily creates) the Masque group on first real use.
---- @return Masque_Group|nil
-local function GetMasqueGroup()
-  if masqueGroup then return masqueGroup end
-  local Masque = LibStub('Masque', true)
-  if not Masque then return nil end
+--- @param toggled Masque_Group
+--- @param other Masque_Group
+local function ForwardToggle(toggled, other)
+  toggled:RegisterCallback(function(_, _, disabled)
+    -- BarsUI re-renders so ActionbarPlus art isn't left stale
+    core:SendMessage(cns:msg('OnMasqueGroupToggled'), disabled)
+    if disabled then other:ReSkin() end
+  end, 'Disabled')
+end
+
+--- Copies the skin only; backdrop, gloss, colors etc. stay per group
+--- @param from Masque_Group
+--- @param to Masque_Group
+local function CopySkin(from, to)
+  if to.db.SkinID == from.db.SkinID then return end
+  to.db.SkinID = from.db.SkinID
+  to:ReSkin()
+end
+
+-- An older ActionbarPlus has no masque table: sync on, nothing saved
+--- @type MasqueConfig_ABP_2_0
+local LEGACY_MASQUE_CONFIG = { syncExtraButtonsSkin = true, arcExtraSkinSeeded = false }
+
+--- @return MasqueConfig_ABP_2_0
+local function MasqueConfig()
+  if cns.masque then return cns:masque() end
+  return LEGACY_MASQUE_CONFIG
+end
+
+--- @param from Masque_Group
+--- @param to Masque_Group
+local function SyncSkinFrom(from, to)
+  -- ReSkin doesn't notify, so syncing both ways can't loop
+  from:RegisterCallback(function()
+    if MasqueConfig().syncExtraButtonsSkin then CopySkin(from, to) end
+  end, 'SkinID')
+end
+
+-- Once: extra buttons keep the skin they had under the Arc group
+local function SeedExtraSkin()
+  local mc = MasqueConfig()
+  if mc.arcExtraSkinSeeded then return end
+  mc.arcExtraSkinSeeded = true
+  CopySkin(masqueGroup, extraGroup)
+end
+
+--- Created on first use: Masque may not be ready at load time.
+local function CreateMasqueGroups()
+  local Masque = LibStub('Masque')
   masqueGroup = Masque:Group(MASQUE_ADDON_NAME, MASQUE_GROUP_LABEL, MASQUE_GROUP_STATIC_ID)
-  -- Masque's own Skins UI can enable/disable this group independent of anything
-  -- ActionbarPlus does. That resets/re-applies Masque's own textures, but leaves
-  -- ActionbarPlus's own per-button visuals stale until the affected bars re-render --
-  -- tell BarsUI to do so rather than requiring a /reload.
-  masqueGroup:RegisterCallback(
-    function(_, _, value) core:SendMessage(cns:msg('OnMasqueGroupToggled'), value) end,
-    'Disabled'
-  )
+  extraGroup = Masque:Group(MASQUE_ADDON_NAME, MASQUE_EXTRA_LABEL, MASQUE_EXTRA_STATIC_ID)
+  ForwardToggle(masqueGroup, extraGroup)
+  ForwardToggle(extraGroup, masqueGroup)
+  SyncSkinFrom(masqueGroup, extraGroup)
+  SyncSkinFrom(extraGroup, masqueGroup)
+  SeedExtraSkin()
+end
+
+--- @return Masque_Group
+local function GetMasqueGroup()
+  if not masqueGroup then CreateMasqueGroups() end
   return masqueGroup
 end
 
---- @param btn Button_ABP_2_0_X
-local function MasqueAddButton(btn)
-  local grp = GetMasqueGroup()
-  if not grp then return end
-  grp:AddButton(btn)
+--- @return Masque_Group
+local function GetExtraGroup()
+  if not extraGroup then CreateMasqueGroups() end
+  return extraGroup
 end
 
---- @param btn Button_ABP_2_0_X|nil
-local function MasqueReSkin(btn)
-  local grp = GetMasqueGroup()
-  if not grp then return end
-  grp:ReSkin(btn)
+-- The extra group takes the Arc skin when sync turns on
+cns:NewAceEvent():RegisterMessage(cns:msg('OnSyncExtraButtonsSkinChanged'), function(_, enabled)
+  if enabled then CopySkin(GetMasqueGroup(), GetExtraGroup()) end
+end)
+
+--- @param btn Button_ABP_2_0_X
+--- @return Masque_Group
+local function GroupOf(btn)
+  if btn.widget.isExtraButton then return GetExtraGroup() end
+  return GetMasqueGroup()
 end
+
+--- @param btn Button_ABP_2_0_X
+local function MasqueAddButton(btn) GroupOf(btn):AddButton(btn) end
+
+--- @param btn Button_ABP_2_0_X
+local function MasqueReSkin(btn) GroupOf(btn):ReSkin(btn) end
 
 --- @param frame BarFrame_ABP_2_0
 --- @return ArcLayoutConfig_ABP_2_0
 local function GetLayoutConfig(frame) return frame.widget:layoutConf().arc end
 
--- One-time default skin for the 'Buttons (Arc)' group, applied exactly once per bar
+-- One-time default skin for both Arc groups, applied exactly once per bar
 -- (arc.initialMasqueSkinApplied) the first time Arc is selected on that bar's Layout
 -- tab -- never re-applied afterward, even if the user changes the skin themselves later.
 -- Triggered from the Layout Type dropdown (see o:OnSelected) rather than at load time,
 -- since Masque's own readiness can't be guaranteed relative to Core's at load time.
 --- @param frame BarFrame_ABP_2_0
 local function ApplyInitialMasqueSkin(frame)
-  local grp = GetMasqueGroup()
-  if not grp then return end
-
   local ARC_DEFAULT_SKIN = 'Serenity - Redux'
   local arcConf = GetLayoutConfig(frame)
-  if not arcConf.initialMasqueSkinApplied then
-    if type(grp.__Set) == 'function' then grp:__Set('SkinID', ARC_DEFAULT_SKIN) end
-    arcConf.initialMasqueSkinApplied = true
-  end
+  if arcConf.initialMasqueSkinApplied then return end
+  GetMasqueGroup():__Set('SkinID', ARC_DEFAULT_SKIN)
+  GetExtraGroup():__Set('SkinID', ARC_DEFAULT_SKIN)
+  arcConf.initialMasqueSkinApplied = true
 end
 
 --[[-----------------------------------------------------------------------------

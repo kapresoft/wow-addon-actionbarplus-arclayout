@@ -24,7 +24,7 @@ ActionbarPlus-ArcLayout is a layout plugin for [ActionbarPlus](https://www.curse
 - **Button Count:** choose how many buttons sit on the arc.
 - **Extra buttons:** form a second arc around the main one, either outside it or nested inside it, with their own spacing option.
 - **Works with existing ActionbarPlus settings:** button size, spacing, drag handle, and keybinds all apply to arc bars.
-- **Separate Masque skin:** arc bars get their own Masque group, **Buttons (Arc)**, so they can be skinned independently of the rest of ActionbarPlus.
+- **Separate Masque skins:** arc bars get their own Masque groups, **Buttons - Arc** and **Buttons - Arc (Extra)**, so they can be skinned independently of the rest of ActionbarPlus.
 
 ### Requirements
 
